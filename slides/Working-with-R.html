@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Working with surveys in R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Lauren Kennedy" />
+    <script src="libs/header-attrs-2.7/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Working with surveys in R
+## Part 1: Working with R
+### Lauren Kennedy
+### Monash University
+### 2021/05/05 (updated: 2021-05-10)
+
+---
+
+
+
+
+
+
+# Why use R?
+
+- R is an opensource software designed for and used by statisticians and datascientists
+
+--
+
+- It has intuitive packages for data munging, visualization and modelling
+
+--
+
+- R makes data science accessible
+
+--
+
+  - Welcoming communities 
+  
+  - "Growth mindset" - Learning and developing as a coder and data scientist is encouraged with resources, support and enthusiasm
+  
+  - Reproducible code is an excellent learning resource
+  
+  - Shiny apps and other tools provide a way to create code-free data communication
+--
+
+- R has packages and support for the survey methods we will work with over the next two days
+
+---
+
+# Getting started in R
+
+R vs R Studio?
+
+- R is the language
+
+- Rstudio is the interface that we use to interact with R (always use R studio)
+
+Four panes:
+
+&lt;img src="../images/four_panes_screenshot.png" width="75%" height="75%" /&gt;
+
+---
+# Customizing Rstudio (a few tricks)
+
+&lt;img src="../images/formatting_tips.png" width="100%" height="100%" /&gt;
+
+---
+
+# Use global options to change a few things
+
+&lt;img src="../images/find_global_options.png" width="100%" height="100%" /&gt;
+
+---
+
+# Use global options to stop R from asking if you want to save history
+
+&lt;img src="../images/global_settings.png" width="100%" height="100%" /&gt;
+
+---
+
+# Change the theme
+
+&lt;img src="../images/change_colourways.png" width="100%" height="100%" /&gt;
+
+---
+
+# Ways to have a reproducible workflow
+
+1. Reproducible code for end to end analysis (including cleaning)
+
+--
+
+2. Shareable file structure
+
+--
+
+3. Open, well documented data (or clear instructions on data origins)
+
+--
+
+4. Easily updated reports 
+
+
+---
+
+# R projects
+
+- One of the difficulties of working with code based analysis is that it exposes the file system.
+
+--
+
+- Files are referenced from the current working directory, which means the current working directory (often long, and different between different computers) needs to be specified. 
+
+--
+
+- R projects are a great solution to specifying long file paths in code.
+
+--
+
+- For every new collection of work that uses similar resources (like data), start by creating a project (File &gt; New Project)
+
+--
+
+- This will create a folder, with a file called "foldername.Rpoj". Every time you want to work on this project, make sure the project is open first!
+
+--
+
+- If you want to share your work, you can simply zip the entire project folder and email it to a collaborator (or push it to Github) - because the file structure is relevant to the project, it will all work for them straightaway!
+
+---
+   
+# Setting up your project directory
+
+- It's generally good practice to create a few folders within your project too. For the workshop, you might want to set up a folder for analysis (where you'll store your code from each practical component), and a folder to store your data. 
+
+- Other things in your project should include the project file (extension Rproj) and a read me file (where you can write notes on what this project is for future you).
+   
+```
+SurveyWorkshop
+├── README.md
+├── analysis
+│ └── workshop1.Rmd
+│ └── workshop2.Rmd
+│ └── workshop3.Rmd
+│ └── workshop4.Rmd
+├── data
+│ └── data.csv
+└── SurveyWorkshop.Rproj
+```
+---
+
+
+# Rscripts and Rmarkdown
+
+- R scripts are a list of commands that conduct a particular task
+
+--
+
+- They need to be run from the top to the bottom
+
+--
+
+- Any text or notes made for the human reader are made using comments, marked with '#'
+
+--
+
+- Rmarkdowns are reports that incorporate chunks of code spaced with text (which can be formatted)
+
+--
+
+- They are "knitted" to produce a word, pdf or html, complete with figures and tables. 
+
+--
+
+- You can do a lot with an rmarkdown - these slides are written in rmd! 
+
+--
+
+- Rmarkdown is useful to create reproducible reports, but they can be slow to run if Bayesian
+
+---
+
+# Drake
+
+- One workflow solution to slow to compile reports is Drake.
+
+--
+
+- This is an analysis workflow that looks to see if previous stages have been changed (e.g., a change in data) 
+
+--
+
+- If they have, then current and future stages are triggered (such as rerunning models or recreating figures/tables)
+
+--
+
+- This can be a good solution for an R workflow that incorporates large analytic projects or small projects that require intensive computation time.
+
+--
+
+- We won't implement this in this course, but there are useful help guides if you're interested!
+
+---
+
+# R packages
+
+- One of the great strengths of R is the number of opensource packages that have been written to support various applications.
+
+--
+
+- Many of these packages are hosted on CRAN, which enforces particular standards
+
+--
+
+- Install packages from CRAN using the tab in your lower rhs panel, or use the command
+
+
+```r
+install.packages("survey")
+```
+
+
+---
+
+# R packages
+
+- We will use a few popular packages throughout this workshop, here's quick summary:
+
+--
+
+  - tidyverse: a collection of packages that work well together for simple and complex data munging and other data work
+  
+  - survey: a package that does traditional survey weighting analysis and creation
+
+  - rstanarm: run a selection of precompiled Bayesian models in Stan
+  
+--
+
+-  Here are some others that we might use (if we have time) and if not are good to know about:
+
+--
+
+  - ggplot2: make cool plots 
+  
+  - knitr and kableExtra: make Rmarkdown documents and nicely formatted tables
+  
+  - brms: Fit a wider variety of models (splines, spatial models etc) using Stan
+  
+  - lme4: Fit multilevel models approximately (very fast, more complex models might have convergence issues, no priors)
+  
+  - INLA: Fit a variety of models using Nested Laplace Approximation (can be a little difficult to use, but fast)
+  
+---
+
+# Getting started: Loading packages 
+
+1. Open R studio
+
+2. Open your project (File &gt; Open Project &gt; Select project)
+
+3. Create a new Rmarkdown file (File &gt; New &gt; Rmarkdown)
+
+4. In the first chunk of R code, load all of the packages you intend to use using the code:
+
+
+
+```r
+library(survey)
+```
+
+5. If you have a package installed, but don't want to load it (because of name clashes or because you only intend to use one function, you can use the :: operator to index it)
+
+
+```r
+survey::function_of_survey_package(input)
+```
+
+---
+
+# Getting started: Import Data
+
+- If you have a choice for how data is given to you, .csv is a good file format for moving between languages.
+
+--
+
+- However, by using the haven package, you can import data in proprietary data structures (e.g., SAS. Stata, etc) and work with them in R.
+
+--
+
+-  A convenient shortcut is to use the Rstudio GUI, which provides a quick view of the data you are importing. To use this. Navigate to your data in the bottom right panel, left hand click the data and select "import data".
+
+--
+
+&lt;img src="../images/Import_Data.png" width="60%" height="60%" /&gt;
+
+---
+
+# Getting started: Data munging
+
+- Survey data is really messy
+
+--
+
+- Working with survey data requires extensive data manipulation skills
+
+--
+
+- In R, there are two options:
+
+1. Base R - Manipulation using indexing, and by applying functions across a dataframe
+
+2. Tidyverse package family - manipulation using pipes %&gt;% to chain functions together
+
+--
+
+- We will be using the second as it's often more accessible to folks who are new to R, but the first is equally fine
+---
+
+# Data munging: Filter
+
+
+&lt;img src="../images/dplyr_filter.jpg" width="100%" height="100%" /&gt;
+
+Illustrations from the Openscapes blog Tidy Data for reproducibility, efficiency, and collaboration by Julia Lowndes and Allison Horst
+
+---
+# Data munging: Select
+
+- Use select to find reduce your data frame to a set of columns
+
+
+
+```r
+new_data &lt;- data %&gt;%
+  select(X1)
+# new_data has one column, X1
+
+new_data &lt;- data %&gt;%
+  select(starts_with("X"))
+# new_data has all columns that start with X
+
+new_data &lt;- data %&gt;%
+  select(!X6:X10)
+# new_data has all columns except X6 through to X10 (even if the variables in between X6 and X10 are X12)
+```
+
+
+---
+
+# Data munging: mutate
+
+&lt;img src="../images/dplyr_mutate.png" width="50%" height="50%" style="display: block; margin: auto;" /&gt;
+
+Illustrations from the Openscapes blog Tidy Data for reproducibility, efficiency, and collaboration by Julia Lowndes and Allison Horst
+
+---
+
+# Data munging: Group by and summarise
+
+- One of my favourite combinations! Obtain a summary statistic by group(s)
+
+
+```r
+new_data &lt;- data %&gt;%
+  group_by(age_group, gender) %&gt;% 
+  summarise(Y_mean = mean(Y))%&gt;%
+  ungroup()
+# produce the mean of all age_group/gender combinations
+```
+
+---
+
+# Data munging: Wide to long and long to wide
+
+- Survey data is often given in a *wide* format, where one respondent is represented by one row
+
+--
+
+- It's generally much easier in R to work with a *long* format, where one observation is represented by one row (i.e., a participant is represented by multiple rows)
+
+--
+
+- Moving from wide to long and long to wide used to be really difficult, until the introduction of the tidyverse pivot_wider and pivot_longer
+
+---
+
+# Data munging: Wide to long and long to wide
+
+&lt;img src="../images/tidyr_spread_gather.png" width="50%" height="50%" style="display: block; margin: auto;" /&gt;
+
+Illustrations from the Openscapes blog Tidy Data for reproducibility, efficiency, and collaboration by Julia Lowndes and Allison Horst
+
+---
+
+# Putting it all together:
+
+
+
+
+```r
+head(ex_data)
+```
+
+```
+##        age gender subject_id pov_16 pov_17 pov_18  happiness
+## 1 44.03886      3          1      0      0      0 -1.4811768
+## 2 57.77084      2          2      1      0      1  1.2521407
+## 3 46.97973      3          3      0      1      0 -0.2682384
+## 4 55.41970      1          4      0      0      0  0.1983017
+## 5 64.42881      2          5      1      0      1 -0.1267626
+## 6 37.40689      2          6      0      0      0  0.7398899
+```
+
+
+```r
+new_data &lt;- ex_data %&gt;%
+  #Remove happiness from the data 
+  select(-happiness)%&gt;%
+  #Make our data long
+  pivot_longer(pov_16:pov_18, names_to = "year", values_to = "poverty")%&gt;%
+  # mutate age to age group using 5 even age intervals
+  mutate(age_group = cut_interval(age,5))%&gt;%
+  #summarise poverty for each age group/gender/year combo
+  group_by(age_group, gender, year) %&gt;% 
+  summarise(percent_poverty = mean(poverty))%&gt;%
+  ungroup()
+# produce the mean of all age_group/gender combinations
+head(new_data)
+```
+
+---
+#Putting it all together
+
+
+```
+## # A tibble: 6 x 4
+##   age_group gender year   percent_poverty
+##   &lt;fct&gt;      &lt;dbl&gt; &lt;chr&gt;            &lt;dbl&gt;
+## 1 [23,33.3]      1 pov_16               0
+## 2 [23,33.3]      1 pov_17               1
+## 3 [23,33.3]      1 pov_18               0
+## 4 [23,33.3]      2 pov_16               1
+## 5 [23,33.3]      2 pov_17               0
+## 6 [23,33.3]      2 pov_18               0
+```
+
+---
+
+# Getting started: How to save
+
+- R studio asks (by default) if you'd like to save your environment. The correct answer is no! (We turned off this option earlier)
+
+--
+
+- The best way to create a reproducible workflow is to use projects, rmarkdowns and scripts to produce reproducible results
+
+--
+
+- Sometimes (particularly if Bayesian) results can take a long time get or you might want to save intermediate steps (like cleaned data or model outputs)
+
+--
+
+- Save data by using RDS format:
+
+
+```r
+saveRDS(new_data, file = "/data/cleaned_data.rds")
+```
+
+--
+
+- Save plots created in ggplot using ggsave
+
+
+```r
+ggsave(file = "/data/new_plot.png", example_plot)
+```
+
+---
+
+# Communites and where to get help
+
+&lt;img src="../images/r_rollercoaster.png" width="100%" height="100%" /&gt;
+
+Illustrations from the Openscapes blog Tidy Data for reproducibility, efficiency, and collaboration by Julia Lowndes and Allison Horst
+
+---
+
+# Communites and where to get help
+
+&lt;img src="../images/code_hero.jpg" width="75%" height="75%" style="display: block; margin: auto;" /&gt;
+
+
+Illustrations from the Openscapes blog Tidy Data for reproducibility, efficiency, and collaboration by Julia Lowndes and Allison Horst
+
+---
+
+# Communities and where to get help
+
+- ?function in R will help you access the help guides and documentation for that function.
+
+--
+
+- Rstats on Twitter (hashtag)
+
+--
+
+- R ladies (international with many local meetings) \url[https://rladies.org/]
+
+--
+
+- R studio community \url[https://community.rstudio.com/t/welcome-to-the-rstudio-community/8]
+
+--
+
+- Stack overflow \url[https://stackoverflow.com/questions/tagged/r]
+
+--
+
+- UseR! conference (annual, \url[https://user2020.r-project.org/])
+
+--
+
+- R Studio conference \url[https://www.rstudio.com/conference/]
+
+--
+
+- R bloggers \url[https://www.r-bloggers.com/]
+
+--
+
+- Local groups
+
+- And many more!
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

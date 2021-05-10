@@ -1,0 +1,94 @@
+---
+title: "Working with surveys in R"
+subtitle: "Course Overview"
+author: "Lauren Kennedy"
+institute: "Monash University"
+date: "2021/05/05 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+# Resources 
+
+Currently openly available on Github. Might be removed at a later date so download a copy at the end of the workshop!
+
+https://github.com/lauken13/MRPWorkshop
+
+---
+
+# A bit about me
+
+- PhD in psychology (University of Adelaide, 2018)
+
+--
+
+- Postdoc at Columbia University with Prof Andrew Gelman
+
+--
+
+- Worked on survey weights and methodology for the Fragile Families study and New York Longitudinal Study of Health and Wellbeing (otherwise known as the Poverty Tracker), and other associated surveys
+
+--
+
+- Currently work at Monash University, Australia in Econometrics and Business Statistics department
+
+--
+
+- Most of my research these days focuses on understanding and improving multilevel regression and poststratification, as well as other survey research
+
+--
+
+- I work mainly in a Bayesian framework using Stan
+
+---
+
+# A bit about the workshop
+
+What will we cover? 
+
+*Day 1*
+
+--
+
+- An introduction to R 
+
+- Creating and using simple survey weights in R
+
+--
+
+*Day 2*
+
+- Working with multilevel models 
+
+- Using multilevel regression and poststratification
+
+--
+
+Structure
+
+- 2 hours (1 hour of lecture, 1 hour of workshop)
+
+*Break*
+
+- 2 hours (1 hour of lecture, 1 hour of workshop)
+
+---
+
+# A bit about you!
+
+- What do you do? 
+
+- What are you hoping to get out of the workshop?
+
+- Are you familiar with R?
+
+- Are you familiar with survey weights?
+
+- Have you used Bayesian stats before?
+
+- Are you familiar with MRP?

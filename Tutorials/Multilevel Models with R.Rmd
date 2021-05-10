@@ -1,0 +1,52 @@
+---
+title: "Multilevel modelling in R"
+author: "Lauren Kennedy"
+date: "10/05/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Key learning outcomes
+
+- Become familiar expressing multilevel models in R
+
+- Identify and run a model using rstanarm
+
+- Exploring posteriors using shiny stan
+
+- Prior predictive checks
+
+# Step one: Open our example data and identify a question of interest to you
+
+You don't need to worry about using this model later for MRP analyses, so feel free to explore!
+
+Try to identify a question that has discrete predictors of an outcome - this means we will be able to use a multilevel model 
+
+# Step Two: Express this model in lme4 syntax
+
+The simplest appraoch is to have a random intercept term (1|group), but you might like to consider a random slope (x|group)
+
+# Step Three: Using prior_PD = TRUE, run a prior predictive check of the priors
+
+How would you know if your priors were suitable? Could you define this before running the prior predictive check?
+
+# Step Four: Change the priors if needed
+
+Start by using `prior_summary` to see what the default priors are
+
+What strategies can you think of to identify problematic priors?
+
+# Step Five: Rerun the model, this time using the data to update the posterior.
+
+Are there any errors or diagnostic warnings? 
+
+# Step Six: Use shiny stan to explore the posterior
+
+This is particularly useful for identifying areas where the posterior was not appropriately explored
+
+# Step Seven: Summarise the posterior using summary statistics or visualizations
+

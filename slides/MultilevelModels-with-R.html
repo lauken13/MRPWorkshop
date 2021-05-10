@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Working with surveys in R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Lauren Kennedy" />
+    <script src="libs/header-attrs-2.7/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Working with surveys in R
+## Part 3: Multilevel models and Bayesian statistics
+### Lauren Kennedy
+### Monash University
+### 2021/05/05 (updated: 2021-05-10)
+
+---
+
+
+
+
+
+# What is a multilevel model?
+
+- Multilevel modelling seems to be one of the bigger crazes around in statistics at the moment (although that might just be my circles)
+
+--
+
+- They've been around for a while - typically they were used to model data with multiple observations per person. For example if we were modelling the relationship between test scores and hours spent studying, but we had multiple observations from the same student in our data, we would use a random effect for the student.
+
+`$$\texttt{test_score} = \beta_0 + x_{\texttt{hours}}\beta_1 + \alpha_i + \epsilon$$`
+--
+
+-  We would then specify that the effect for student is drawn from a normal distribution with mean `\(0\)` and variance `\(\sigma_{st}\)`
+
+`$$\alpha_i \sim N(0,\sigma_{st}^2)$$`
+
+- In R we specify a formula using `lme4` notation, which looks like this
+
+
+```r
+test_score = hours + (1|student)
+```
+---
+
+# lme4 notation 
+
+&lt;img src="../images/lme4notation.png" width="100%" height="100%" /&gt;
+
+From: https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf
+
+
+---
+
+# Why are multilevel models so useful for MRP?
+
+- In MRP random effects are used for most demographic categories (those with two levels should me modelled using an indicator)
+
+--
+
+- This allows us to take advantage of *partial pooling* - sharing some (but not all) information across different levels of a demographic group
+
+--
+
+- For survey data (where remember we risk having very small cells in the sample through sampling and population demographics), this means we can increase our certainty of sub-group estimates, with a small increase in bias. 
+
+--
+
+- Multilevel models are a special class of methods that induce regularization, which reduces the mean squared error of predictions by reducing the variance and allowing a small amount of bias. 
+
+---
+
+# Partial pooling
+
+- Partial pooling is a balance between no pooling and complete pooling
+
+--
+
+- With no pooling, the estimate for each group is independent of every other group. It would be alike a regression with indicator variables for each level
+
+`$$y \sim \beta_1D_1 + \beta_2D_2 + \beta_3D_3 + ... + \beta_jD_j + \epsilon$$`
+(An interesting side note is the relationship between poststratification/raking and this model, see Little, 1993)
+
+--
+
+- With complete pooling, the estimate for each group is the same as every other group. It would be like fitting a regression model with an intercept only
+
+`$$y \sim \beta_0 + \epsilon$$`
+- Partial pooling is a compromise that allows some information to be shared (through the variance of the groups) but each group still has it's own estimate
+
+---
+
+# Alternatives to multilevel models
+
+-  What if we didn't use a multilevel model?
+
+--
+
+- We could use a normal linear model, with indicators for each group. For small sample sizes or small cells, this would result in unstable or highly variable group estimates
+
+--
+
+- However, there are a variety of regularizing models that could be used instead. Examples include:
+
+--
+
+  - Spatial and auto regressive models, implemented in Stan and INLA (Gao, et al., 2020)
+  
+  - Splines (Kolczynska et al, 2020) 
+  
+  - Stacked methods (Ornstein, 2020, Leeman, 2020)
+  
+  - BART (Bisbee, 2019)
+
+--
+
+- All of these methods regularize estimates in some way
+---
+
+# Why be Bayesian?
+
+- Bayesian data analysis:
+
+`$$p(\theta|y) = \frac{p(y|\theta)p(\theta)}{\int p(y|\theta)p(\theta)d\theta}$$`
+--
+
+- The power of Bayesian inference for MRP applications comes through two ways:
+
+  - The posterior allows for easily interpreted posterior predictions for new data, and easily created and interpreted uncertainty intervals from the posterior
+  
+--
+  
+  - The prior allows us to control the amount that we regularize (particularly the prior on the variance term of the random effect), and allows us to connect different regularizing methods in an understandable way. 
+  
+--
+  
+  - Great support with Stan! Andrew Gelman pioneered MRP and so Stan works particularly well for multilevel models and has a number of users who develop resources specifically around this topic
+
+---
+
+# (just a few) Multilevel model packages in R
+
+- rstanarm 
+
+  - Limited set of models 
+  - Precompiled (doesn't need a compiler installed)
+  - Complex priors that work well in many situations
+  - Complex priors that are difficult to change if needed
+  - Resulting stan code is not 'human readable'
+
+--
+
+- brms
+
+  - Models are not precompiled (takes slightly longer)
+  - Can link into the cmdstanr library (most modern releases of Stan - all the features)
+  - Priors tend to be simpler to understand, but more likely to need modification
+  - Priors are easirer to adapt
+  - MUCH wider array of models implemented 
+  - Resulting stan code is human readable and editable
+
+---
+
+# (just a few) Multilevel model packages in R
+
+- lme4
+
+  - Frequentist
+  - No priors (can use blme to add priors)
+  - Fast
+  - Maximum likelihood estimates
+  
+--
+
+- INLA
+
+  - Fast
+  - Bayesian
+  - Nested Laplace Approximation
+  - Can be limited in the number of random effects it can handle
+  - Not on CRAN
+  - (my opinion) can be a little harder to specify models
+  
+---
+
+# Easy example model with Rstanarm
+
+- We will use rstanarm for this workshop as it's the most beginner friendly. In my research I typically use brms, so I'd recommend moving to that once you are comfortable
+
+--
+
+- We will fit models with the `stan_glmer` function. This allows us to fit random effects models
+
+--
+
+- First let's simulate some simple data. Here we have an outcome `\(y\)` that is binary, and a grouping variable with 20 levels
+
+
+```
+##          x y
+## 1  school7 0
+## 2 school13 0
+## 3  school8 1
+## 4  school3 0
+## 5  school4 1
+## 6  school2 1
+```
+
+```
+## 'data.frame':	500 obs. of  2 variables:
+##  $ x: Factor w/ 20 levels "school1","school10",..: 18 5 19 14 15 12 20 5 5 7 ...
+##  $ y: int  0 0 1 0 1 1 1 0 1 0 ...
+```
+
+---
+# Choosing priors with prior predictive checks
+
+- How do we know if our priors are reasonable?
+
+--
+
+-  We used to specify "uninformative priors". These were very wide and diffuse flat priors on parameters.
+
+--
+
+- However, priors need to be interpreted in the context of where they are being used'
+
+--
+
+- One way to do this is to use a *prior predictive check*
+
+--
+
+- With a prior predictive check, we predict the outcome `\(y\)` using the observed values and the priors. This helps us to interpret the priors in the context of the link function we have used, and the scale of the predictor variables
+
+- To draw from the prior predictive distribution, set `prior_PD` = TRUE
+--
+
+
+```r
+library(rstanarm)
+
+model_fit &lt;- stan_glmer(y ~ (1|x), data = fake_data,
+                        family = binomial(link = "logit"),
+                        prior_PD = TRUE) #If this is true, do not update the model given the data
+```
+
+---
+# Choosing priors with prior predictive checks
+
+- Use the prior predictive distribution to predict the outcome `\(y\)`. Here we predict the probability of `\(y=1\)` using `posterior_linpred`, but for a continuous outcome use `posterior_epred` 
+
+
+```r
+preds_prior &lt;- posterior_linpred(model_fit, newdata = fake_data, 
+                                 transform = TRUE)
+```
+-- 
+
+- This returns a matrix of dimension 4000 (number of samples) x 500 (number of observations)
+
+---
+
+# Choosing priors with prior predictive checks
+
+- One interesting visualization is to view the predictive probability of the outcome for a few observations. 
+
+
+```r
+data.frame(preds_prior) %&gt;% 
+  pivot_longer(everything(),
+               names_to = "sample_id",
+               values_to = "posterior_preds") %&gt;%
+  filter(sample_id %in% paste0('X',sample(1:500,5))) %&gt;%
+  ggplot(., aes(x=posterior_preds))+
+  geom_histogram(binwidth = .05) +
+  facet_grid(~sample_id)
+```
+
+![](MultilevelModels-with-R_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+
+- What do you notice about this?
+---
+
+# Changing the priors in rstanarm
+
+- It's important to say that as long as the prior suggest *reasonable* values of `\(y\)`, then this is fine. If it suggests outlandish values for `\(y\)`, then this is something to consider. 
+
+--
+
+- In this case, I think it adds too much weight on 0 or 1 values of probability, something that many of my applications do not have as a possibility.
+
+--
+
+- I can obtain the current prior used with `prior_summary`. I see that the intercept has a N(0,2.5) prior, which is wider than I typically like to use in a logistic regression
+
+
+```r
+prior_summary(model_fit)
+```
+
+```
+## Priors for model 'model_fit' 
+## ------
+## Intercept (after predictors centered)
+##  ~ normal(location = 0, scale = 2.5)
+## 
+## Covariance
+##  ~ decov(reg. = 1, conc. = 1, shape = 1, scale = 1)
+## ------
+## See help('prior_summary.stanreg') for more details
+```
+
+---
+# Changing the priors in rstanarm
+
+- Using the help guide, I change the prior_intercept to a narrower normal distribution, which results in more realistic prior predicitive checks
+
+
+```r
+model_fit2 &lt;- stan_glmer(y ~ (1|x), data = fake_data, family = binomial(link = "logit"),
+                        prior_PD = TRUE, #If this is true, do not update the model given the data
+                        prior_intercept = normal(0,1))
+
+preds_prior2 &lt;- posterior_linpred(model_fit2, newdata = fake_data, 
+                                 transform = TRUE)
+```
+
+
+![](MultilevelModels-with-R_files/figure-html/unnamed-chunk-10-1.png)&lt;!-- --&gt;
+
+---
+# When do priors have the biggest impact?
+
+- Priors will make the biggest impact to estimates when we have less data overall (why people say the data "overwhelms" the prior)
+
+--
+
+- They will also take effect when some there is small amounts of data for a particular parameter. For example a random effect with three levels will tend to be more prior reliant than  a random effect with 20 levels
+
+--
+
+- Priors that are substantially different to the observed data
+
+---
+
+# Fitting models with rstanarm
+
+- Fit the model with rstanarm by removing the `prior_PD = TRUE` arguement
+
+
+```r
+model_fit3 &lt;- stan_glmer(y ~ (1|x), data = fake_data, family = binomial(link = "logit"),
+                        prior_intercept = normal(0,1))
+```
+
+- Now when we use `posterior_linpred`, we obtain a posterior for each observed data point. 
+
+
+```r
+preds_posterior3 &lt;- posterior_linpred(model_fit3, newdata = fake_data, 
+                                 transform = TRUE)
+```
+
+
+---
+# Fitting models with rstanarm
+
+- Summarise the model predictions for each group
+
+
+```r
+comb_data &lt;- data.frame(t(preds_posterior3), school = fake_data$x) 
+  
+comb_data %&gt;%
+  pivot_longer(-school,
+               names_to = "posterior_id",
+               values_to = "posterior_preds") %&gt;%
+  ggplot(., aes(x = school,y=posterior_preds))+
+  geom_boxplot() 
+```
+
+![](MultilevelModels-with-R_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+
+---
+
+# ShinyStan and other diagnostic tools
+
+- In this case, there were no warnings or errors when the model ran
+
+--
+
+- However that won't always be the case!
+
+--
+
+- Types of Stan errors (see more here https://mc-stan.org/misc/warnings.html)
+
+--
+  - Divergent transitions after warmup
+  - Maximum treedepth exceeded.
+  - BFMI 
+  - Rhat 
+  - Bulk ESS 
+  - Tail ESS
+
+--
+
+-  Use the shinystan gui to help explore posterior fit. Run:
+
+
+```r
+library(shinystan)
+as.shinystan(model_fit3)
+```
+
+  
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

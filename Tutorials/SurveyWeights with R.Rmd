@@ -1,0 +1,90 @@
+---
+title: "SurveyWeights with R"
+author: "Lauren Kennedy"
+date: "10/05/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Key learning outcomes
+
+- Work with census data to create frequency tables
+
+- Use the survey package to specify a survey design for a non-probability survey
+
+- Realize the complexity of adjusting survey to population
+
+- Create summary statistics
+
+# How do we know what to adjust by?
+
+Adjustment variables for raking need to be known in the sample and population.
+
+- What demographic variables are known in the sample?
+
+- What demographic variables are also known in the population?
+
+- How could we create comparable categories of the variables `race` or `gender`?
+
+For the purposes of this example, we do not adjust by race (construct measurement very different and not clear how to combine) and remove those who respond `other` for gender. For more on these challenges see https://arxiv.org/abs/2009.14401
+
+# Step 1: Obtain census data
+
+For this workshop we focus on estimating extroversion in the US. This means we need to obtain US census data. 
+
+As the US census is deceninnial, we instead use the year American Community Survey data. 
+
+This data is downloadable from https://www.census.gov/programs-surveys/acs/microdata/access.html, but it is very large in size and takes some time to download and load in. For learning purposes, I have uploaded a permuted sample of the PUMS data on our Github repo as `example_ps.rds`. You can use this to practice manipulating census data, and download the frequency tables to use for the actual adjustment. 
+
+# Step 2: Rename variables and create frequency tables
+
+- Filter the data to age greater than 12. This is our target population
+
+- Mutate the data to create an age group variable and a female (binary) variable
+
+- Create age group levels <18,18-25,25-35,45-60,60+ using the ifelse function
+
+- Why do we use unevenly spaced age bins (HINT: what is the sample distribution of age?)
+
+- Create a data frame for age_group and female frequencies
+
+# Step 3: Download true frequency tables
+
+- Download `acs_ps.rds` from our Github page
+
+- Create a data frame for age_group and female frequencies
+
+# Step 4: Create matching variables in the sample
+
+- Filter all non-us respondents
+
+- Create an age_group variable with matching bins
+
+- remove all respondents who don't respond as male or female (this is NOT best practice, see Kennedy et al for more details on alternatives
+
+- remove any missing observations using na.omit
+
+# Step 5: Specify survey design
+
+- Create a survey design object
+
+# Step 6: Rake to population totals
+
+- Rake the sample to the population totals
+
+# Step 7: Trim weights
+
+- Trim weights at the 98th quantile
+
+- Compare the distribution of trimmed weights to untrimmed weight
+
+# Step 8: Try a summary statistic 
+
+- Estimate mean extroversion using trimmed weights and compare to sample extroversion
+
+- Estimate mean extroversion using untrimmed weights and compare to trimmed weights estimate
+

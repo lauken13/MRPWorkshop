@@ -1,0 +1,142 @@
+---
+title: "Workshop 1: Working with R"
+author: "Lauren Kennedy"
+date: "09/05/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Key learning outcomes
+
+- Download the example dataset that we will use for the next two days
+
+- Work with projects and rmarkdown documents
+
+- Explore data munging with the tidyverse
+
+Stretch goal: Create visualizations using example code and ggplot2
+
+# Step one: Setting up for reproducibility
+
+- Create a new project in R 
+
+- Within that project, create folders for data and code
+
+- Create a new rmarkdown document and save it in the code folder
+
+
+# Step two accessing our example data 
+
+We will be using raw data from an online convenience sample completing psychology tests online. Access data here https://openpsychometrics.org/_rawdata/ and select this data from the sixth cell down "Big Five Personality Test". 
+
+This data is used as an example in this paper https://arxiv.org/abs/1906.11323. We will be using it as example data to explore survey weighting and multilevel regression and poststratification. 
+
+This is an **example dataset**. It's useful for educational purposes because it is freely available and has a number of features that are useful to discuss. This tutorial is NOT intended as a claim that all web samples can be generalized by poststratification with two variables. n
+
+Download this data, unzip the .csv save in the data folder. 
+
+# Step three 
+
+In the first chunk of your rmarkdown document, load the tidyverse library, the ggplot2 library and the readr library. 
+
+Then in the second chunk read in your data. If you have set up the project as described, the following code should be sufficient. Note that instead of using read.csv, I have instead used read_table2. This is because although the data is saved as a .csv (comma separated), it is in fact white space seperated. Using the gui viewer it was easy to diagnose and solve this issue. 
+
+```{r, eval = FALSE}
+library(readr)
+
+ex_data <- read_table2("../data/data.csv")
+
+```
+
+# Step four: Data exploration
+
+Now we can R to explore the data to understand what we are working with. Here are some helpful functions:
+
+```{r, eval = FALSE}
+summary(ex_data)
+
+View(ex_data)
+
+head(ex_data)
+
+tail(ex_data)
+```
+
+One important thing to check is the type of variable R thinks is in each column. You can do this with `str`. 
+
+```{r, eval = FALSE}
+str(ex_data)
+```
+
+One thing to notice is that the demographics are recorded as either numeric (num) or character ("chr"). For our later work, we would like them to be a special type of variable in R called factor. We can change these variables like this:
+
+```{r, eval = FALSE}
+library(tidyverse)
+
+ex_data <- ex_data %>%
+  mutate_at(c("race","engnat","gender","hand","source","country"), as.factor)
+
+```
+
+Try running summary of the data again to see how changing the variable type changes how the function works.
+
+Another option would be to mutate each variable seperately so you can name the levels from the codebook using the `levels` arguement in the as.factor function. 
+
+# Step five: Create new variables
+
+We also need to create derived variables. We will need to create an age_group variable, but we'll leave this for next tutorial. Right now we will focus on making an aggregate score for extroversion - which will be a linear combination of the ten items that start with E. Extroversion = E1 + (5-E2) + E3 + (5-E4) + E5 + (5-E6) + E7 + (5-E8) + E9 + (5-E10). Items 2,4,6,8 and 10 are reverse coded, which is why we need to subtract them from 5. 
+
+# Step six: Getting comfortable with data manipulation 
+
+We'll have to do some more manipulation with data in later sections. Here are some exercises to practice. 
+
+- Create a dataset of only US respondents. 
+
+- Create a dataset of respondents who are aged 18 and older
+
+- What is the average level of extroversion for different types of handidness
+
+- What proportion of respondents came from a url with .edu?
+
+- Can you pivot the data so that each item response is represented by one row?
+
+# Step seven: A few easy visualization examples with ggplot2
+
+Here are a few visulisations to get you started exploring the data. Feel free to ask for more if you have specific ones in mind!
+
+```{r, eval = FALSE}
+library(tidyverse)
+
+# scatter plot
+ex_data %>%
+  filter(age<100 & age>0& A1>0)%>% # removing a few coding errors
+  ggplot(.,aes(x = E1, y =age)) +
+  geom_jitter() #like a scatter plot but with points jittered to reduce overplotting
+
+# add colour
+
+# scatter plot
+ex_data %>%
+  filter(age<100 & age>0& A1>0)%>% # removing a few coding errors
+  ggplot(.,aes(x = E1, y =age, colour = as.factor(hand))) +
+  geom_jitter(alpha = .3) #like a scatter plot but with points jittered to reduce overplotting
+
+# histogram
+
+ex_data %>%
+  ggplot(.,aes(x = E1)) +
+  geom_histogram()
+
+# histogram across handidness
+
+ex_data %>%
+  ggplot(.,aes(x = E1)) +
+  geom_histogram() +
+  facet_grid(~hand)
+
+
+```
+
