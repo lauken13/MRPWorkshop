@@ -1,0 +1,510 @@
+---
+title: "Working with surveys in R"
+subtitle: "Part 2: Survey weighting"
+author: "Lauren Kennedy"
+institute: "Monash University"
+date: "2021/05/05 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+# What problem do we solve with survey weighting?
+
+```{r, echo=FALSE,out.width="5%", out.height="5%"}
+
+knitr::include_graphics(rep("../images/cat_black.png",100))
+
+
+knitr::include_graphics(rep("../images/dog_black.png",100))
+
+```
+
+--
+
+Do you like cats?
+
+---
+
+# What problem do we solve with survey weighting?
+
+```{r, echo=FALSE,out.width="5%", out.height="5%"}
+
+knitr::include_graphics(rep("../images/cat_black.png",25))
+knitr::include_graphics(rep("../images/cat_red.png",75))
+
+knitr::include_graphics(rep("../images/dog_black.png",75))
+knitr::include_graphics(rep("../images/dog_red.png",25))
+```
+
+--
+
+50% of the population likes cats
+
+---
+
+# What problem do we solve with survey weighting?
+
+```{r, echo=FALSE,out.width="5%", out.height="5%"}
+
+knitr::include_graphics(rep("../images/cat_black.png",4))
+
+knitr::include_graphics(rep("../images/dog_black.png",16))
+```
+
+--
+
+Do you like cats?
+
+---
+
+# What problem do we solve with survey weighting?
+
+```{r, echo=FALSE,out.width="5%", out.height="5%"}
+
+knitr::include_graphics(rep("../images/cat_black.png",1))
+knitr::include_graphics(rep("../images/cat_red.png",3))
+
+knitr::include_graphics(rep("../images/dog_black.png",12))
+knitr::include_graphics(rep("../images/dog_red.png",4))
+```
+
+--
+
+35% of the sample likes cats
+
+---
+
+# Weights adjust the sample to the population
+
+- This means that each cat would be weighted by 25, and each dog would be weighted 6.25 
+
+--
+
+- You can interpret this as each cat "counts" as 25 cats, and each dog "counts" as 6.25 dogs
+
+--
+
+- To estimate the total cat preference in the population, we would calculate:
+
+Likes cats = 3x25 + 4x6.25
+
+Likes cats = 100 
+
+Likes cats = 1x25 + 12x6.25
+
+Likes cats = 100
+
+--
+
+- This means our estimate of the proportion who like cats is 50%, which is the population proportion 
+
+---
+
+# Why do we need to learn about weights to use MRP?
+
+-  Weights play an important role in survey data
+
+--
+
+- Even though MRP is a move away from survey weights, survey weights are often used for comparrison purposes
+
+--
+
+- Survey weights (from high quality surveys) are used to create population poststratification matrices
+
+--
+
+- Survey weights can sometimes be incorportated into MRP models
+
+---
+
+# What causes non-representative data?
+
+- Data can be unrepresentative for a multitude of reasons
+
+--
+
+- Sampling designs generally sample different individuals in the population at different probabilities to either increase efficiency or for practical reasons (such as cluster sampling schools in an education context)
+
+--
+
+- Non-response (those who are invited to participate refuse to participate) can also cause issues for representation if the likelihood of response is not the same across the population. 
+
+--
+
+-  In the most severe case, we have non-probability samples (also known as convenience samples). In this case, anyone in the population is eligible to participate, but they must volunteer to participate. If awareness of the opportunity to participate, or willingness to participate if aware is not uniform across the population, then there is potential for data that doesn't represent the population. 
+
+--
+
+- Often times we will have a mix of reasons that cause non-response. Ideally survey weights would adjust for all of these reasons effectively and efficiently
+
+---
+
+# When does non-representative matter?
+
+- Unless response rate is 100%, then almost all data will have some challenge to representation. 
+
+--
+
+-  However, this doesn't always create bias in the population estimates. 
+
+--
+
+-  If a sample is not representative on the population on a particular covariate X (e.g., age), this will only impact the population estimates of Y if Y is related to X. 
+
+--
+
+- So we might have issues estimating something like reaction time in the population if our sample is not representative of age, but for something unrelated to age (like left or right handidness) it might not be as big of an issue. These are assumptions on our weighting adjustment.
+
+---
+
+# Sampling Design
+
+- Weights from the sampling design are typically fairly easy to calculate and derived from the sampling design. 
+
+--
+
+- As our example data is not a probability sample at all, I won't go into this too much, but I would recommend Lohr (2007 and other editions) as good coverage for the different types of design weights. 
+
+--
+
+- Weights from the sampling design typically incorporate the sampling design (e.g., cluster sample, stratified sample, two stage and complex sampling etc.)
+
+--
+
+- Design weights can also incorporate information from multiframe surveys (e.g., cellphone and landline surveys) through the calculation of potential overlap. 
+
+---
+
+# Non response
+
+- After design weights are calculated, there is still likely some bias in the population estimate due to non-response. 
+
+--
+
+- To account for this, design weights are usually poststratified to known population totals. 
+
+--
+
+- In textbooks, this is often described using a process like this:
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(kableExtra)
+
+kable(data.frame(Age = c("18-25","26-45" , "46+", "18-25","26-45" , "46+"), 
+                 Sex = c(rep("F",3),rep("M",3)), 
+                 n = c("n1","n2","n3","n4","n5", "n6"), 
+                 N = c("N1","N2","N3","N4","N5", "N6"),
+                 wt = c("N1/n1","N2/n2","N3/n3","N4/n4","N5/n5","N6/n6")))
+
+```
+---
+
+# Non response
+
+- In practice the sample size of the sample is such that there will be a cell in the sample with no observations in it for a particular combination.
+
+--
+
+- In order to create approximate weights, a method known as raking or "iterative proportional fitting" is used. 
+
+--
+
+- This algorithm takes the margins of the adjustment variables in the sample and adjusts the weights until the weighted sample approximates the population totals are within a margin of error
+
+--
+
+- Sometimes key interactions are include to assist. 
+
+--
+
+- If design weights have already been created, these weights are adjusted so they estimate the population totals in much the same way.
+
+---
+
+# Non probability samples
+
+-  Non probability samples are growing increasingly popular. 
+
+--
+
+-  They're generally though of as "lower quality" but they can be useful to reach hard to reach groups or for other practical reasons
+
+--
+
+- The adjustments for non-probability samples are much the same as for non-response, but you're much more reliant on the assumptions of iid sampling within adjustment cell. 
+
+--
+
+- You should also consider the recruitment methods when considering adjustment - adjusting for a web survey should be different to adjusting for a shopping center survey, even if both are convenience samples.
+
+---
+
+# Using survey weights with the survey package
+
+- Simple survey designs (with weights provided), or surveys that provide replicate weights with the survey are best used according to the documentation.
+
+- To obtain the number of people with a particular quality, we can use:
+
+$$
+  \sum_{i=1}^{n}w_i*Q_i
+$$
+- To obtain the weighted mean, we can use a Horvitz-Thompson estimator:
+
+$$\hat{Y}=\frac{\sum_{i=1}^{n}w_iy_i}{\sum_{i=1}^{n}w_i}$$
+- Otherwise follow the survey weights documentation 
+---
+
+# Using survey weights with the survey package
+
+- However, the survey package really shines when we need to calculate the variance of these estimates because estimating the variance of estimators with a complex sampling design is very complex.
+
+
+- To do this, we first specify the survey design. Here are a couple of examples, but Lumley (2010) is an excellent and thorough reference for the more complex examples.
+
+--
+
+- Note that design weights are calculated by hand using sampling information
+
+--
+
+- Simple random sampling OR non-probability sample
+
+```{r, eval = FALSE}
+
+ex_design <- svydesign(id = ~1, data = ex_data, 
+                       weights = ~design_wts)
+
+```
+
+--
+
+- Stratified sample with a finite population correction
+
+```{r, eval = FALSE}
+ex_design <-svydesign(id=~1,strata=~stype, 
+                      weights=~design_weights, data=ex_data, fpc=~fpc)
+```
+
+---
+
+# Using survey weights with the survey package
+
+- The survey design can be used with various functions to calculate weighted estimates. Here are a few:
+
+```{r, eval = FALSE}
+# mean of y
+svymean(~y, ex_design) 
+# variance of y
+svyvar(~y, ex_design)
+# count all of y (good for binaries)
+svytotal(~y, ex_design)
+# generalized linear model
+svyglm(y~x1 +x2, ex_design)
+```
+
+---
+
+# Creating survey weights with the survey package (Design)
+
+
+- Design weights are generally created in a step by step process based on the probability of inclusion at each stage of sampling. 
+
+--
+
+- Exact calculation for different designs is beyond the scope of the workshop. 
+
+--
+
+- However, design weights are passed through the survey design object for the next stage of weighting - accounting for non response. Pass them through like this:
+
+```{r, eval = FALSE}
+
+ex_design <- svydesign(id = ~1, data = ex_data, 
+                       weights = ~design_wts))
+
+```
+
+--
+
+- If no design, specify the weights before raking adjustment as 1
+
+```{r, eval = FALSE}
+
+ex_design <- svydesign(id = ~1, data = ex_data, 
+                       weights = ~rep(nrow(ex_data, 1)))
+
+```
+
+---
+
+# Creating survey weights with the survey package (nonresponse)
+
+- To adjust for nonrepsonse, we then rake tables in the sample to the population. 
+
+--
+
+- We can only do this adjustment with variables known in the population
+
+--
+
+- If a full, recent census is not available, then we need to estimate these values using a very high quality, large survey. In the US we use the American Community Survey, for other countries the DHS is used. 
+
+--
+```{r, eval = FALSE}
+rkd_wts_obj <- rake(
+  design = svydesign(id = ~1, data = ex_data, weights = ~design_wt), # sample design
+  sample.margins = margins_samp, # sample margins (see next slide)
+  population.margins = margins_pop # sample margins (see next slide)
+)
+```
+---
+
+# Creating survey weights with the survey package (nonresponse)
+
+- The sample margins need to be given in a list of adjustment variables
+
+```{r eval = FALSE}
+
+margins_samp = list(~var1, ~var2)
+
+```
+
+--
+
+- The population totals need to be calculated and given as a list of dataframes and frequencies. The names here are very important! 
+
+```{r eval = FALSE}
+
+margins_pop = list( data.frame(var1 = c('level1','level2'), Freq = c(1111,2222),
+                               data.frame(var2 = c('group1','group2'), Freq = c(555,1010)))
+
+```
+
+---
+
+# Creating survey weights with the survey package (nonresponse)
+
+- Use `dplyr` to create the data frames assuming we approximate the population using a survey
+
+```{r, eval = FALSE}
+
+first_dataframe =  popn_df %>%
+  group_by(var1)%>%
+  summarise(Freq = sum(wt))%>% # Important that this is called Freq
+  ungroup()
+
+snd_dataframe =  popn_df %>%
+  group_by(var2)%>%
+  summarise(Freq = sum(wt))%>%
+  ungroup()
+
+```
+
+
+---
+# Creating survey weights with the survey package (extreme weights)
+
+- The distribution of sample weights will generally be very skewed.
+
+--
+
+- As we adjust by sample cell sizes, some cells are likely to very small in the sample, resulting in artificially large and unstable weights
+
+--
+
+- This can increase variance of our estimator greatly, which isn't desirable
+
+--
+
+- One approach to solving this issue is to trim the very large weights. This creates some bias in our estimate, but reduces the variance. To trim weights at the 98 percentile
+
+--
+
+- Use the `weights` function to extract the weights
+
+--
+
+```{r eval = FALSE}
+
+trmd_wts  <- trimWeights(rkd_wts_obj, upper = quantile(weights(rkd_wts_obj),.98))
+```
+
+---
+# What survey weights can do
+
+- Survey weights incorporate complex information about sampling design and non-response patterns 
+
+--
+
+- They can be used to make population estimates and in regressions
+
+--
+
+- Survey weights sometimes incorporate private or sensitive information (like geographic location or school) that might be censored in publicly released data.
+
+--
+
+- Survey weights generally incorporate months of specialized knowledge from the survey statistician and domain experts. This information includes the survey design and the important variables that are included in the raking step. 
+
+--
+
+- If replicate weights are provided, then survey weights provide a reproducible way to obtain confidence intervals with appropriate coverage across statistical languages
+
+--
+
+- Replicate weights also can rely on sensitive information and team expertise to create
+
+
+---
+
+# What survey weights can not do 
+
+- Survey weights are designed to estimate a population total. This means their use is specific to the population used in weights creation, and so their use has to be very specifically tied to a research question in this population.
+
+--
+
+- Survey weights have limited direct use when making small area estimates or estimates at smaller groups in the population (not necessarily areas). They will generally produce unbiased estimates at smaller areas, but these estimates will be very uncertain (bias-variance trade-off)
+
+--
+
+- Survey weights require the poststratification matrix to be over aggregated cells - for example age group with very discrete levels (say 3 or 4) rather than using age as a continuous variable
+
+--
+
+- Survey weights can be a bit of a mess (Gelman, 2007) when it comes to creation - in complex surveys there are many steps and rules of thumb to calculate the probability of inclusion from the sampling design, and and the decisions of what to adjust for with non-response are often theory driven rather than data driven. 
+
+---
+
+# Things that no one talks about
+
+- How do we choose what to adjust by?
+
+--
+
+- What if our population is uncertain?
+
+--
+
+- What if we measure adjustment constructs differently in sample and population
+
+--
+
+- Should the adjustment variables change with different applications?
+
+--
+
+- How much raking is too much raking?
+
+
+

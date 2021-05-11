@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "C:/Users/lken0015/LocalDocuments/R libraries",
+        "installDependencies": true
+    }
+}

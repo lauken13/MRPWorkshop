@@ -1,0 +1,277 @@
+library(data.table)
+library(brms)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+
+#Read in sample data
+data <- fread("Data/data.csv")
+
+############################################################################################
+#####                                  Prelim cleaning                                ######
+############################################################################################
+
+#ensure country is coded as a factor
+data$country <- factor(data$country)
+#Subset only those in the US and those less than 99 years old.
+data_us <- data[data$country=="US" & data$age<99,]
+summary(data_us$age)
+
+#Remove the cases who haven't completed the big 5 questions
+data_us <- data_us[!is.na(data_us$E2),]
+
+#adjusting for reverse coding
+data_us <- data_us %>%
+  mutate(O2 = 6-O2,
+         O4 = 6-O4,
+         O6 = 6-O6,
+         C2 = 6-C2,
+         C4 = 6-C4,
+         C6 = 6-C6,
+         C8 = 6-C8,
+         E2 = 6-E2,
+         E4 = 6-E4,
+         E6 = 6-E6,
+         E8 = 6-E8,
+         E10 = 6-E10,
+         A1 = 6-A1,
+         A3 = 6-A3,
+         A5 = 6-A5,
+         A7 = 6-A7,
+         N2 = 6-N2,
+         N4 = 6-N4)
+data_us <- data.frame(data_us)
+
+#Check for coding - should all be positively correlated.
+cor(data_us[,c("O1","O2","O3","O4","O5","O6","O7","O8","O9","O10")])
+cor(data_us[,c("C1","C2","C3","C4","C5","C6","C7","C8","C9","C10")])
+cor(data_us[,c("E1","E2","E3","E4","E5","E6","E7","E8","E9","E10")])
+cor(data_us[,c("A1","A2","A3","A4","A5","A6","A7","A8","A9","A10")])
+cor(data_us[,c("N1","N2","N3","N4","N5","N6","N7","N8","N9","N10")])
+
+#Create a total sum score for each subscale
+data_us$O <- apply(data_us[,grepl("O",colnames(data_us))],1,sum)
+data_us$C <- apply(data_us[,grepl("C",colnames(data_us))],1,sum)
+data_us$E <- apply(data_us[,grepl("E",colnames(data_us))],1,sum)
+data_us$A <- apply(data_us[,grepl("A",colnames(data_us))],1,sum)
+data_us$N <- apply(data_us[,grepl("N",colnames(data_us))],1,sum)
+
+############################################################################################
+#####                                  Step 1: Model                                 ######
+############################################################################################
+
+#create age group
+data_us$age_group <- ifelse(data_us$age<18,1,ifelse(data_us$age<25, 2,ifelse(data_us$age<35,3,ifelse(data_us$age<45,4,ifelse(data_us$age<60,5,6)))))
+data_us$age_group <- as.factor(data_us$age_group)
+
+#Recode female to 0,1 or NA
+data_us$gender <- ifelse(data_us$gender %in% c(1,2),data_us$gender,NA)
+data_us$female <- data_us$gender-1
+
+#remove missing data
+data_us <- na.omit(data_us)
+
+
+################### Prior predictive check for the default priors  #########################################
+
+get_prior(O | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us)
+#Note no proper prior for female coef. Set female prior
+
+m_O_prior <- brm(O | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us, chains=1, cores=4, control=list(adapt_delta=.80),
+                 sample_prior = "only", prior = set_prior("normal(0,10)", class = "b"))
+m_O_prior_predict <- predict(m_O_prior, summary=FALSE)
+m_O_prior_predict_df <- data.frame(iter = 1:1000,m_O_prior_predict) %>%
+  pivot_longer(-iter, names_to = "obs", values_to = "value")
+
+m_E_prior <- brm(E | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us, chains=1, cores=4, control=list(adapt_delta=.80),
+sample_prior = "only", prior = set_prior("normal(0,10)", class = "b"))
+m_E_prior_predict <- predict(m_E_prior, summary=FALSE)
+m_E_prior_predict_df <- data.frame(iter = 1:1000,m_E_prior_predict) %>%
+pivot_longer(-iter, names_to = "obs", values_to = "value")
+
+m_prior_predict_df <- data.frame(rbind(m_O_prior_predict_df,m_E_prior_predict_df),
+                                 outcome = c(rep("O", nrow(m_O_prior_predict_df)),
+                                             rep("E", nrow(m_E_prior_predict_df))))
+
+#Create a long df for the figures                                             
+data_us_pp_plot <- data_us[,c("O","E")] %>%
+  pivot_longer(everything(),names_to = "outcome", values_to = "value")
+
+#Create a df to annotate plots
+df_txt_annotate <- data.frame(outcome=c("O","E"),name=c("Openness to Experience","Extraversion"))
+
+pp_plot <- ggplot() +
+  geom_histogram(data = data_us_pp_plot, aes(x = value, y= ..density..),colour="black",binwidth = 1,fill="#969696") +
+  geom_density(data = m_prior_predict_df, aes(x=value, group=obs), alpha = .1) +theme_bw()+
+  geom_text(data = df_txt_annotate, mapping = aes(x = -Inf, y = -Inf,label = name),  hjust   = -0.09,
+                                    vjust   = -24)+theme_bw()+
+  facet_grid(.~outcome) +
+  xlab("Scale Score")+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        strip.text = element_blank(),
+        axis.line.y = element_blank())
+ggsave("Figures/OE_pp_figure.png",width=15,height=6,units="cm")
+
+
+
+
+#fit each model
+m_O <- brm(O | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us, chains=4, cores=4, control=list(adapt_delta=.80),
+           prior = set_prior("normal(0,10)", class = "b"))
+m_C <- brm(C | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us, chains=4, cores=4, control=list(adapt_delta=.80),
+           prior = set_prior("normal(0,10)", class = "b"))
+m_E <- brm(E | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us, chains=4, cores=4, control=list(adapt_delta=.80),
+           prior = set_prior("normal(0,10)", class = "b"))
+m_A <- brm(A | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us, chains=4, cores=4, control=list(adapt_delta=.80),
+           prior = set_prior("normal(0,10)", class = "b"))
+m_N <- brm(N | trunc(lb=10, ub = 50) ~ female + (1|age_group), data=data_us, chains=4, cores=4, control=list(adapt_delta=.80),
+           prior = set_prior("normal(0,10)", class = "b"))
+
+saveRDS(list(m_O,m_C,m_E,m_A,m_N),file= "Results/model_fits.rds") #save
+tmp <- readRDS("Results/model_fits.rds")
+m_O <- tmp[[1]]
+m_C <- tmp[[2]]
+m_E <- tmp[[3]]
+m_A <- tmp[[4]]
+m_N <- tmp[[5]]
+
+#Produce table for paper:
+r_effects <- ranef(m_O)$age_group[,,"Intercept"]
+row.names(r_effects)<- c("<18","18-24","25-34","35-45","45-64","65+")
+f_effect <- fixef(m_O)
+output_tabl <- rbind(f_effect, r_effects)
+knitr::kable(round(output_tabl,digits=1), "latex", booktabs = T,row.names = T)
+
+############################################################################################
+#####                                  Step 2: Poststratify                           ######
+############################################################################################
+
+library(dplyr)
+acs1 <- fread("Data/psam_pusa.csv", sep = ",", header =TRUE)
+acs1 <- acs1[acs1$AGEP>12,]
+acs1$female <- acs1$SEX-1
+acs1$age_group <- ifelse(acs1$AGEP<18,1,ifelse(acs1$AGEP<25, 2,ifelse(acs1$AGEP<35,3,ifelse(acs1$AGEP<45,4,ifelse(acs1$AGEP<60,5,6)))))
+acs1_ps <- acs1 %>%
+  group_by(age_group, female)%>%
+  summarize(N=sum(PWGTP))%>%
+  ungroup()
+rm(acs1)
+
+acs2 <- fread("Data/psam_pusb.csv", sep = ",", header =TRUE)
+acs2 <- acs2[acs2$AGEP>12,]
+acs2$female <- acs2$SEX-1
+acs2$age_group <- ifelse(acs2$AGEP<18,1,ifelse(acs2$AGEP<25, 2,ifelse(acs2$AGEP<35,3,ifelse(acs2$AGEP<45,4,ifelse(acs2$AGEP<60,5,6)))))
+acs2_ps <- acs2 %>%
+  group_by(age_group, female)%>%
+  summarize(N=sum(PWGTP))%>%
+  ungroup()
+rm(acs2)
+
+acs3 <- fread("Data/psam_pusc.csv", sep = ",", header =TRUE)
+acs3 <- acs3[acs3$AGEP>12,]
+acs3$female <- acs3$SEX-1
+acs3$age_group <- ifelse(acs3$AGEP<18,1,ifelse(acs3$AGEP<25, 2,ifelse(acs3$AGEP<35,3,ifelse(acs3$AGEP<45,4,ifelse(acs3$AGEP<60,5,6)))))
+acs3_ps <- acs3 %>%
+  group_by(age_group, female)%>%
+  summarize(N=sum(PWGTP))%>%
+  ungroup()
+rm(acs3)
+
+acs4 <- fread("Data/psam_pusd.csv", sep = ",", header =TRUE)
+acs4 <- acs4[acs4$AGEP>12,]
+acs4$female <- acs4$SEX-1
+acs4$age_group <- ifelse(acs4$AGEP<18,1,ifelse(acs4$AGEP<25, 2,ifelse(acs4$AGEP<35,3,ifelse(acs4$AGEP<45,4,ifelse(acs4$AGEP<60,5,6)))))
+acs4_ps <- acs4 %>%
+  group_by(age_group, female)%>%
+  summarize(N=sum(PWGTP))%>%
+  ungroup()
+rm(acs4)
+
+acs_ps<-rbind(acs1_ps,acs2_ps,acs3_ps,acs4_ps)
+
+acs_ps <- acs_ps %>%
+  group_by(female, age_group)%>%
+  summarize(N = sum(N))%>%
+  ungroup()
+
+saveRDS(acs_ps,file='Data/acs_ps.rds')
+
+acs_ps <- readRDS('Data/acs_ps.rds')
+
+
+#print the ACS posstrat matrix
+
+knitr::kable(acs_ps, "latex", booktabs = T)
+
+#Create a sample from the poststrat matrix that is representative
+sample_pop<- sample(1:12, 10000,prob=acs_ps$N, replace=TRUE)
+sample <- acs_ps[sample_pop,1:2]
+
+#Predict 5 possible values for each observation in the simulated sample
+PPC_O <- posterior_predict(m_O, newdata = sample, nsamples=5)
+PPC_C <- posterior_predict(m_C, newdata = sample, nsamples=5)
+PPC_E <- posterior_predict(m_E, newdata = sample, nsamples=5)
+PPC_A <- posterior_predict(m_A, newdata = sample, nsamples=5)
+PPC_N <- posterior_predict(m_N, newdata = sample, nsamples=5)
+
+#Predict 5 possible values for each observation in the actual sample (to compare noise and check fits)
+PPC_O_obs <- posterior_predict(m_O, nsamples=5)
+PPC_C_obs <- posterior_predict(m_C, nsamples=5)
+PPC_E_obs <- posterior_predict(m_E, nsamples=5)
+PPC_A_obs <- posterior_predict(m_A, nsamples=5)
+PPC_N_obs <- posterior_predict(m_N, nsamples=5)
+
+
+#Combine and move to long form dataset for plotting for the simulated data
+samp_df_wide_O <- data.frame(t(PPC_O),var="O",type="sim_samp")
+samp_df_long_O <- gather(samp_df_wide_O, 'iter','est',c(-var, -type))
+samp_df_wide_C <- data.frame(t(PPC_C),var="C",type="sim_samp")
+samp_df_long_C <- gather(samp_df_wide_C,'iter','est',c(-var, -type))
+samp_df_wide_E <- data.frame(t(PPC_E),var="E",type="sim_samp")
+samp_df_long_E <- gather(samp_df_wide_E,'iter','est',c(-var, -type))
+samp_df_wide_A <- data.frame(t(PPC_A),var="A",type="sim_samp")
+samp_df_long_A <- gather(samp_df_wide_A,'iter','est',c(-var, -type))
+samp_df_wide_N <- data.frame(t(PPC_N),var="N",type="sim_samp")
+samp_df_long_N <- gather(samp_df_wide_N,'iter','est',c(-var, -type))
+
+samp_df <- rbind(samp_df_long_O,samp_df_long_C,samp_df_long_E,samp_df_long_A,samp_df_long_N)
+
+#Combine and move to long form dataset for plotting for the observed data
+samp_df_wide_O_obs <- data.frame(t(PPC_O_obs),var="O",type="sim_samp")
+samp_df_long_O_obs <- gather(samp_df_wide_O_obs,'iter','est',c(-var, -type))
+samp_df_wide_C_obs <- data.frame(t(PPC_C_obs),var="C",type="sim_samp")
+samp_df_long_C_obs <- gather(samp_df_wide_C_obs,'iter','est',c(-var, -type))
+samp_df_wide_E_obs <- data.frame(t(PPC_E_obs),var="E",type="sim_samp")
+samp_df_long_E_obs <- gather(samp_df_wide_E_obs,'iter','est',c(-var, -type))
+samp_df_wide_A_obs <- data.frame(t(PPC_A_obs),var="A",type="sim_samp")
+samp_df_long_A_obs <- gather(samp_df_wide_A_obs,'iter','est',c(-var, -type))
+samp_df_wide_N_obs <- data.frame(t(PPC_N_obs),var="N",type="sim_samp")
+samp_df_long_N_obs <- gather(samp_df_wide_N_obs,'iter','est',c(-var, -type))
+
+samp_df_obs <- rbind(samp_df_long_O_obs,samp_df_long_C_obs,samp_df_long_E_obs,samp_df_long_A_obs,samp_df_long_N_obs)
+
+
+#Create a df to annotate plots
+df_txt_annotate <- data.frame(var=c("O","C","E","A","N"),name=c("Openness to Experience", "Conscientiousness","Extraversion",
+                                                       "Agreeableness","Neuroticism"))
+actual_dat <- gather(data_us[,c("O","C","E","A","N")],'var','val')
+
+#Creat plot
+ggplot()+
+  geom_histogram(data=actual_dat,mapping = aes(x=val,y=..density..),colour="black",binwidth = 1,fill="#969696")+
+  geom_density(data = samp_df_obs, mapping = aes(x=est,group=iter),,colour="black",size=.5)+
+  geom_density(data = samp_df, mapping = aes(x=est,group=iter),colour="#b30000",size=.5)+
+  geom_text(data = df_txt_annotate, mapping = aes(x = -Inf, y = -Inf,label = name),  hjust   = -0.1,
+            vjust   = -8)+theme_bw()+
+  facet_grid(var~.)+
+  xlab("Scale Score")+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        strip.text = element_blank(),
+        axis.line.y = element_blank())
+ggsave("Figures/OCEAN_MRP.png",width=12,height=20,units="cm")
+
+

@@ -1,0 +1,5 @@
+"0","popn_preds <- posterior_epred(model_fit_v2, newdata = popn_ps)
+"
+"2","Error in posterior_epred(model_fit_v2, newdata = popn_ps) : 
+  object 'model_fit_v2' not found
+"

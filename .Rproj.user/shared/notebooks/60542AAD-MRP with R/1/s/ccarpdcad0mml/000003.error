@@ -1,0 +1,1 @@
+{"frames":[{"func":"posterior_epred(model_fit_v2, newdata = popn_ps)","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0}],"message":"Error in posterior_epred(model_fit_v2, newdata = popn_ps) : \n  object 'model_fit_v2' not found\n"}

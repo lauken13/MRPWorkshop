@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Working with surveys in R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Lauren Kennedy" />
+    <script src="libs/header-attrs-2.7/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Working with surveys in R
+## Part 2: Survey weighting
+### Lauren Kennedy
+### Monash University
+### 2021/05/05 (updated: 2021-05-11)
+
+---
+
+
+
+
+
+# What problem do we solve with survey weighting?
+
+&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;
+
+--
+
+Do you like cats?
+
+---
+
+# What problem do we solve with survey weighting?
+
+&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;
+
+--
+
+50% of the population likes cats
+
+---
+
+# What problem do we solve with survey weighting?
+
+&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;
+
+--
+
+Do you like cats?
+
+---
+
+# What problem do we solve with survey weighting?
+
+&lt;img src="../images/cat_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/cat_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_black.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;&lt;img src="../images/dog_red.png" width="5%" height="5%" /&gt;
+
+--
+
+35% of the sample likes cats
+
+---
+
+# Weights adjust the sample to the population
+
+- This means that each cat would be weighted by 25, and each dog would be weighted 6.25 
+
+--
+
+- You can interpret this as each cat "counts" as 25 cats, and each dog "counts" as 6.25 dogs
+
+--
+
+- To estimate the total cat preference in the population, we would calculate:
+
+Likes cats = 3x25 + 4x6.25
+
+Likes cats = 100 
+
+Likes cats = 1x25 + 12x6.25
+
+Likes cats = 100
+
+--
+
+- This means our estimate of the proportion who like cats is 50%, which is the population proportion 
+
+---
+
+# MRP makes predictions into the population
+
+- This means we model the outcome (likes cats) by the demographics (dog or cat) using our sample
+--
+
+- To estimate the total cat preference in the population, we would calculate:
+
+pr(Likes cats|cat) = .75
+
+pr(Likes cats|dog = .25
+
+N cats in population = 100 (est 75 like cats)
+
+N dogs in population = 100 (est 25 like cats)
+
+Total % of population that likes cats = (25+75)/(100+100) = 50%
+
+--
+
+- Ties to  multiple imputation, potential outcomes, forecasting etc. 
+
+---
+
+# More formally
+
+- Estimate the probability of the outcome given demographic variables using a multilevel model
+
+--
+
+`$$p(y_i=1|\texttt{age_group, sex})$$` 
+`$$= logit^{-1}(\beta_0 + \alpha_{\texttt{agegroup}[i]} +\alpha_{\texttt{sex}[i]})$$` 
+--
+
+`$$\alpha_{\texttt{agegroup}} \sim N(0,\sigma_{\texttt{agegroup}}^2)$$`
+
+`$$\alpha_{\texttt{sex}} \sim N(0,\sigma_{\texttt{sex}}^2)$$`
+
+
+---
+
+# Post stratification (survey weighting)
+
+- Create weights that adjust the sample `\(n_j\)` to the population `\(N_j\)`
+
+--
+
+- In a simple case, it looks like this:
+
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Age &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; Sex &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; n &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; N &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; wt &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 18-25 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N1/n1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 26-45 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N2/n2 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 46+ &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N3/n3 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 18-25 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; M &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N4/n4 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 26-45 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; M &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N5/n5 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 46+ &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; M &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N6/n6 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+---
+
+
+# Post stratification (MRP)
+
+- Predict for each cell the probability of the outcome `\(y\)`
+
+--
+
+- In a simple case, it looks like this:
+
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Age &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; Sex &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; n &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; N &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; pr_y &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 18-25 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; p1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 26-45 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; p2 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 46+ &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; p3 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 18-25 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; M &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; p4 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 26-45 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; M &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; p5 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 46+ &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; M &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; N6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; p6 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+--
+
+-  Then create population estimates using this formula, where j is denoted the row in the poststratification matrix
+
+`$$\hat{\theta} = \frac{\sum_{j=1}^J\theta_j * N_j}{\sum_{j=1}^JN_j}$$`
+---
+
+# In R
+
+- In this example we are going to predict the average amount of extroversion in the US population (aged 13+) using our online websample. 
+
+--
+
+- There's a couple of data specific challenges to note. 
+
+--
+
+  - education was not measured at all
+  
+  - ethnicity was measured using levels that do not map easily to the US census measurement
+  
+  - gender was measured instead of sex, with three categories. We remove those who don't respond male/female for simplicity, but this is absolutely not best practice. See https://arxiv.org/abs/2009.14401 for more details on the decision process. 
+  
+  - All of the psychological measures are scales with discrete lower and upper bounds. In the manuscript we use a truncated normal regression (implemented through brms), but today we will use just a regular linear regression
+
+---
+
+# Run a model estimating neuroticism
+
+
+```r
+clean_data  &lt;- readRDS("../data/cleaned_data_mrp.rds")
+```
+
+- Use rstanarm to fit a regression model that predicts the outcome, using random effects for demographics with greater than one level
+
+
+```r
+library(rstanarm)
+```
+
+
+```r
+model_fit &lt;- stan_glmer(N ~ (1|age_group) + female,  data = clean_data)
+```
+There were a few divergent transitions, we can use shiny stan to explore further
+
+
+```r
+library(shinystan)
+launch_shinystan(model_fit)
+```
+
+---
+
+&lt;img src="../images/diagnostic_plot_1.png" width="100%" height="20%" /&gt;
+
+---
+
+# Adapt the model 
+
+- Change adapt_delta to decrease the step size and reduce the divergent transitions (generally if this reduces the transitions then it's fine to continue)
+
+
+```r
+library(rstanarm)
+model_fit_v2 &lt;- stan_glmer(N ~ (1|age_group) + female,  data = clean_data, adapt_delta =  .95)
+```
+
+```
+## Warning: There were 1 divergent transitions after warmup. See
+## http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+## to find out why this is a problem and how to eliminate them.
+```
+
+```
+## Warning: Examine the pairs() plot to diagnose sampling problems
+```
+
+---
+
+# Make population poststratification predictions
+
+- Read in the population poststratification matrix
+
+
+```r
+popn_ps &lt;- readRDS("../data/acs_ps.rds")
+
+popn_ps
+```
+
+```
+## # A tibble: 12 x 3
+##    female age_group        N
+##     &lt;dbl&gt;     &lt;dbl&gt;    &lt;int&gt;
+##  1      0         1 10713479
+##  2      0         2 15974402
+##  3      0         3 22216888
+##  4      0         4 20279699
+##  5      0         5 31659960
+##  6      0         6 30275386
+##  7      1         1 10193764
+##  8      1         2 15166108
+##  9      1         3 21758629
+## 10      1         4 20455441
+## 11      1         5 32907478
+## 12      1         6 36732643
+```
+---
+
+# Make population poststratification predictions
+
+- Use `posterior_epred` to make population predictions
+
+- Use `posterior_linpred(transform = TRUE)` for binomial models
+
+- Use `posterior_predict` to predict potential values, not expected potential values
+
+
+```r
+popn_preds &lt;- posterior_epred(model_fit_v2, newdata = popn_ps)
+```
+
+--
+
+- What size do we get back?
+
+
+```r
+dim(popn_preds)
+```
+
+```
+## [1] 4000   12
+```
+--
+
+- So we get a `\(4000\)` predictions for each cell in the poststratification matrix
+---
+
+# Estimating uncertainty
+
+- The `\(4000\)` predictions correspond to each posterior sample for the parameters in the model.
+
+--
+
+- Together they form a *posterior predictive* distribution
+
+--
+
+- We can use quantiles of this distribution to create estimates of uncertainty around our estimates. 
+
+
+---
+
+# Making population estimates
+
+- Generally we don't want a posterior estimate for every cell. Instead we might like to aggegate over the cells to create population or sub population estimates. 
+
+--
+
+- We will focus on making a population estimate for the mean neuroticism
+
+--
+
+
+```r
+popn_ests &lt;- t(popn_preds) %&gt;% #make the rows the poststrat options
+  cbind(popn_ps) %&gt;% #join the poststratification_matrix 
+  pivot_longer(c(-female,-age_group,-N),
+               values_to = "preds",
+               names_to = "posterior_samp") %&gt;%
+  group_by(posterior_samp) %&gt;% # for each posterior sample
+  summarise(popn_est_N = sum(N*preds)/sum(N)) %&gt;% #MRP formula
+  ungroup()
+
+head(popn_ests)
+```
+
+```
+## # A tibble: 6 x 2
+##   posterior_samp popn_est_N
+##   &lt;chr&gt;               &lt;dbl&gt;
+## 1 1                    28.7
+## 2 10                   28.6
+## 3 100                  28.6
+## 4 1000                 28.7
+## 5 1001                 28.7
+## 6 1002                 28.2
+```
+
+---
+
+# Estimating uncertainty
+
+- Now we have `\(4000\)` estimates for the mean of the posterior. As we've seen, we can take the posterior median, but how can we use quantiles to estimate uncertainty?
+
+--
+
+
+```r
+popn_ests %&gt;%
+  summarise(lower_10 = quantile(popn_est_N, .1),est = median(popn_est_N), upper_90 = quantile(popn_est_N, .9))
+```
+
+```
+## # A tibble: 1 x 3
+##   lower_10   est upper_90
+##      &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
+## 1     28.5  28.7     28.8
+```
+
+--
+
+- What is the sample mean?
+
+
+```r
+clean_data %&gt;%
+  summarise(mean(N))
+```
+
+```
+##    mean(N)
+## 1 30.18465
+```
+
+--
+- Generally it's good to us 10-90 intervals because estimates of 2.5-97.5 intervals can be noisy due to the number of samples in the tails
+
+
+---
+
+# Are those intervals particularly narrow?
+
+- Potential reasons
+
+  - Lots of data (&gt;8000 observations)
+  
+  - Very simple model (only two adjustments)
+  
+  - Estimating the mean (rather than the potential outcomes)
+
+---
+
+# What about sub population estimates? 
+
+- Sub-population estimates can be calculated using the same model fit, but we aggregate over smaller sections of the population
+
+--
+
+- We can see that to do this we would add in extra grouping variables. 
+
+
+```r
+t(popn_preds) %&gt;% #make the rows the poststrat options
+  cbind(popn_ps) %&gt;% #join the poststratification_matrix 
+  pivot_longer(c(-female,-age_group,-N),
+               values_to = "preds",
+               names_to = "posterior_samp") %&gt;%
+  group_by(posterior_samp, female) %&gt;% # for each posterior sample
+  summarise(popn_est_N = sum(N*preds)/sum(N)) %&gt;% #MRP formula
+  ungroup() %&gt;%
+  group_by(female) %&gt;%
+  summarise(lower_10 = quantile(popn_est_N, .1),est = median(popn_est_N), upper_90 = quantile(popn_est_N, .9))
+```
+
+```
+## `summarise()` has grouped output by 'posterior_samp'. You can override using the `.groups` argument.
+```
+
+```
+## # A tibble: 2 x 4
+##   female lower_10   est upper_90
+##    &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
+## 1      0     27.3  27.5     27.7
+## 2      1     29.6  29.8     30.0
+```
+---
+
+# MRP vs survey weighting
+
+- Survey weighting puts the burden of sample adjustment on the survey statistician (i.e., they think deeply about sampling and non-response, create weights and then export weights with the data)
+
+- MRP puts the burden of sample adjustment on the analyst (i.e., they need to identify relevant variables to adjust for, find them in the population and run complex models and prediction to make simple estimates)
+
+--
+
+- Survey weights are designed for specific use cases or populations 
+
+- MRP uses the same model to make predictions for different populations
+
+--
+
+- Survey weights are generic for the variables in the survey (I can use the same weights to estimate different outcomes)
+
+- MRP is run specific for a given outcome. If you want to make estimates for a different outcome, you need to run a different model. 
+
+---
+
+# MRP and designed surveys
+
+-  Many of the MRP examples rely on non-probability type surveys where the only necessary adjustment is poststratification
+
+--
+
+- Ignoring sampling design is not advised
+
+--
+
+- How can sampling design be included in MRP models (this is a research area and might change!)
+
+--
+
+1. If the sampling design variables are known in the population (for example, clusters or strata), then they can be included in the MRP model as predictors
+
+2. If the sampling design variables are NOT included in the population, you can try to impute it in the population, or else use weights within your MRP model (see Si et al., 2017). 
+
+---
+
+# What should we adjust for?
+
+1. Demographic variables that relate to the outcome of interest
+
+2. Demographic variables that relate to non-response
+
+OR Demographic variables that fulfill both?
+
+---
+
+# Extensions
+
+- Consider fitting more advanced models (truncated regression, splines, AR(1)/random walk, BYM2 etc) models using brms
+(Hint: Install cmdstanr and use brms with a cmdstanr backend for easier installation)
+
+--
+
+- Explore using deeper interactions between your adjustment variables
+
+--
+
+- Little 1993 - the relationship between poststratification and modelling 
+
+--
+
+- Working with complex measurement models with MRP (see Chris Warshaw's work with IRT https://www.cambridge.org/core/journals/political-analysis/article/abs/dynamic-estimation-of-latent-opinion-using-a-hierarchical-grouplevel-irt-model/6EBDF2FC39CEEEE1108CEC799FC9B7BC and Marta Kolczynska for a brms implementation https://osf.io/preprints/socarxiv/3v5g7/)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
